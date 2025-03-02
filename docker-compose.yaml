@@ -19,9 +19,16 @@ services:
       RABBITMQ_DEFAULT_PASS: password
       REDIS_HOST: redis
     depends_on:
-      - mongodb
-      - user_service
-      - rabbitmq
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      user_service:
+        condition: service_started
     restart: always
 
   db:
@@ -34,26 +41,32 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data  # Named volume for Postgres data
+      - pgdata:/var/lib/postgresql/data
     restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "fastapi_user", "-d", "users_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   user_service:
-      build:
-        context: ./user_service
-        dockerfile: Dockerfile
-      container_name: user_service
-      ports:
-        - "8050:8000"
-      volumes:
-        - ./user_service/data:/app/data  # Persist SQLite database
-      environment:
-        DATABASE_URL: postgresql://fastapi_user:fastapi_pass@db/users_db
-        SECRET_KEY: b1218b936ff9bba74233a42c6e633ed432cf14ded1d43daf2c0f81280f5cda479696aa7449a77b0a4cf05253fea8e6d8ef886577ad7dfa05976f8f798a2f557a
-        ALGORITHM: HS256
-        ACCESS_TOKEN_EXPIRE_MINUTES: 120
-      depends_on:
-        - db
-      restart: always
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - "8050:8000"
+    volumes:
+      - ./user_service/data:/app/data
+    environment:
+      DATABASE_URL: postgresql://fastapi_user:fastapi_pass@db/users_db
+      SECRET_KEY: b1218b936ff9bba74233a42c6e633ed432cf14ded1d43daf2c0f81280f5cda479696aa7449a77b0a4cf05253fea8e6d8ef886577ad7dfa05976f8f798a2f557a
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 120
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
 
   mongodb:
     image: mongo:6.0
@@ -78,28 +91,36 @@ services:
       - RABBITMQ_DEFAULT_USER=user
       - RABBITMQ_DEFAULT_PASS=password
     depends_on:
-      - mongo_recommendation
-      - rabbitmq
+      mongo_recommendation:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   mongo_recommendation:
-      image: mongo:6.0
-      container_name: mongo_recommendation
-      ports:
-        - "27019:27017"
-      volumes:
-        - mongo_recommendation_data:/data/db
+    image: mongo:6.0
+    container_name: mongo_recommendation
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo_recommendation_data:/data/db
 
   rabbitmq:
     image: "rabbitmq:3-management"
     container_name: rabbitmq
     ports:
-      - "5672:5672"  # RabbitMQ message broker port
-      - "15672:15672"  # Management UI (http://localhost:15672)
+      - "5672:5672"
+      - "15672:15672"
       - "15692:15692"
     environment:
       RABBITMQ_ERLANG_COOKIE: secret
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
+    restart: always
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:latest
@@ -107,33 +128,43 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   notifications_worker:
     build: ./notifications_service
     container_name: notifications_worker
     depends_on:
-      - redis
-      - notifications_service
+      redis:
+        condition: service_healthy
+      notifications_service:
+        condition: service_started
     environment:
       - REDIS_HOST=redis
       - MONGO_URI=mongodb://mongodb:27017
     volumes:
       - ./notifications_service/src:/app/src
-    command: [ "node", "src/worker.js" ]
+    command: ["node", "src/worker.js"]
 
   notifications_dlq_worker:
     build: ./notifications_service
     container_name: notifications_dlq_worker
     depends_on:
-      - redis
-      - notifications_service
-      - notifications_worker
+      redis:
+        condition: service_healthy
+      notifications_service:
+        condition: service_started
+      notifications_worker:
+        condition: service_started
     environment:
       - REDIS_HOST=redis
       - MONGO_URI=mongodb://mongodb:27017
     volumes:
       - ./notifications_service/src:/app/src
-    command: [ "node", "src/dlqWorker.js" ]
+    command: ["node", "src/dlqWorker.js"]
 
   graphql_gateway:
     build:
@@ -143,10 +174,14 @@ services:
     ports:
       - "4000:4000"
     depends_on:
-      - user_service
-      - notifications_service
-      - recommendation_service
-      - redis
+      user_service:
+        condition: service_started
+      notifications_service:
+        condition: service_started
+      recommendation_service:
+        condition: service_started
+      redis:
+        condition: service_healthy
     env_file:
       - ./graphql_gateway/.env
 
@@ -158,22 +193,23 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - redis
-      - rabbitmq
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   grafana:
-      image: grafana/grafana:latest
-      container_name: grafana
-      ports:
-        - "3000:3000"
-      volumes:
-        #- grafana-data:/var/lib/grafana
-        - ./monitoring/grafana:/var/lib/grafana
-
-      environment:
-        - GF_SECURITY_ADMIN_PASSWORD=admin
-      depends_on:
-        - prometheus
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      prometheus:
+        condition: service_started
 
   redis-exporter:
     image: oliver006/redis_exporter
@@ -183,7 +219,8 @@ services:
     ports:
       - "9121:9121"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
 volumes:
   mongodata:
