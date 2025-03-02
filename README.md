@@ -225,6 +225,26 @@ docker-compose down
 ✔ RabbitMQ & Redis working? (`docker logs notifications_worker`)  
 ✔ Monitoring available? (Grafana @ [http://localhost:3000](http://localhost:3000))  
 ✔ DLQ reprocessing jobs? (`docker logs dlq_worker`)  
+---
+##  📸 Screenshots
+<p align="center">
+  <img src="images/1.png" alt="Screenshot 1" style="width: 100%; height: auto;">
+  <img src="images/2.png" alt="Screenshot 2" style="width: 100%; height: auto;">
+  <img src="images/3.png" alt="Screenshot 3" style="width: 100%; height: auto;">
+  <img src="images/4.png" alt="Screenshot 4" style="width: 100%; height: auto;">
+  <img src="images/5.png" alt="Screenshot 5" style="width: 100%; height: auto;">
+  <img src="images/6.png" alt="Screenshot 6" style="width: 100%; height: auto;">
+  <img src="images/7.png" alt="Screenshot 7" style="width: 100%; height: auto;">
+  <img src="images/8.png" alt="Screenshot 8" style="width: 100%; height: auto;">
+  <img src="images/9.png" alt="Screenshot 9" style="width: 100%; height: auto;">
+  <img src="images/10.png" alt="Screenshot 10" style="width: 100%; height: auto;">
+  <img src="images/11.png" alt="Screenshot 11" style="width: 100%; height: auto;">
+  <img src="images/12.png" alt="Screenshot 12" style="width: 100%; height: auto;">
+  <img src="images/13.png" alt="Screenshot 13" style="width: 100%; height: auto;">
+  <img src="images/14.png" alt="Screenshot 14" style="width: 100%; height: auto;">
+</p>
+
+---
 
 ## 🔐 Security Measures
 ✔ We can disable opening ports to the host system and rather just expose it to the services in the same docker compose file, or just open port for GraphQL Endpoint. (Only for development purpose I kept all ports open!)
