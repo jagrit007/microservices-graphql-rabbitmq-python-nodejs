@@ -118,7 +118,7 @@ services:
       - REDIS_HOST=redis
       - MONGO_URI=mongodb://mongodb:27017
     volumes:
-      - ./notifications_service:/app
+      - ./notifications_service/src:/app/src
     command: [ "node", "src/worker.js" ]
 
   notifications_dlq_worker:
@@ -132,7 +132,7 @@ services:
       - REDIS_HOST=redis
       - MONGO_URI=mongodb://mongodb:27017
     volumes:
-      - ./notifications_service:/app
+      - ./notifications_service/src:/app/src
     command: [ "node", "src/dlqWorker.js" ]
 
   graphql_gateway:
