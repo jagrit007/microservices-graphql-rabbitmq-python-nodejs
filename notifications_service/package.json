@@ -1,0 +1,25 @@
+{
+  "name": "notifications_service",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
+  "dependencies": {
+    "amqplib": "^0.10.5",
+    "bcryptjs": "^3.0.2",
+    "bull": "^4.0.2",
+    "bullmq": "^5.41.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ioredis": "^5.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.11.0",
+    "prom-client": "^15.1.3"
+  }
+}

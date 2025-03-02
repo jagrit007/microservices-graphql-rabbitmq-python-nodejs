@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  recommendation_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - MONGO_URI=mongodb://mongo_recommendation:27017/recommendations
+    depends_on:
+      - mongo_recommendation
+
+  mongo_recommendation:
+    image: mongo:latest
+    container_name: mongo_recommendation
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo_recommendation_data:/data/db
+
+volumes:
+  mongo_recommendation_data:

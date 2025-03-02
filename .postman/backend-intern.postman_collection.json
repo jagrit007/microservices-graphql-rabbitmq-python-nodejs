@@ -1,0 +1,363 @@
+{
+	"info": {
+		"_postman_id": "1d08d9a1-7837-45d8-a92d-21ee49b86408",
+		"name": "pratilipi",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12366200"
+	},
+	"item": [
+		{
+			"name": "User Service",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Jagrit\",\n    \"email\": \"jagrit007@gmail.com\",\n    \"password\": \"test123\",\n    \"preferences\": [\"promotions\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{USER_SVC_ENDPOINT}}/users",
+							"host": [
+								"{{USER_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.environment.set(\"jwt_token\", pm.response.json().access_token);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"jagrit007@gmail.com\",\n    \"password\": \"test123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{USER_SVC_ENDPOINT}}/users/login",
+							"host": [
+								"{{USER_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Details",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{USER_SVC_ENDPOINT}}/users/1",
+							"host": [
+								"{{USER_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"users",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Preferences",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Jagrit\",\n    \"email\": \"jagrit007@gmail.com\",\n    \"password\": \"test123\",\n    \"preferences\": [\"promotions\", \"order_updates\"]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{USER_SVC_ENDPOINT}}/users/1",
+							"host": [
+								"{{USER_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"users",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notification Service",
+			"item": [
+				{
+					"name": "Create Notification",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 1,\n    \"type\": \"promotions\",\n    \"content\": \"hello 2\",\n    \"read\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_SVC_ENDPOINT}}/notifications/",
+							"host": [
+								"{{NOTIFICATION_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"notifications",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Notifications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 1,\n    \"message\": \"Your order is shipped to your nearest warehouse!\",\n    \"type\": \"order_update\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{NOTIFICATION_SVC_ENDPOINT}}/send-notification",
+							"host": [
+								"{{NOTIFICATION_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"send-notification"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark notification read",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{NOTIFICATION_SVC_ENDPOINT}}/notifications/67c452dd503d07977f7b94da/read",
+							"host": [
+								"{{NOTIFICATION_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"notifications",
+								"67c452dd503d07977f7b94da",
+								"read"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notifications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{NOTIFICATION_SVC_ENDPOINT}}/notifications/unread",
+							"host": [
+								"{{NOTIFICATION_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"notifications",
+								"unread"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Recommendation Service",
+			"item": [
+				{
+					"name": "Get Recommendations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{RECOMMENNNNDATION_SVC_ENDPOINT}}/recommendations/1",
+							"host": [
+								"{{RECOMMENNNNDATION_SVC_ENDPOINT}}"
+							],
+							"path": [
+								"recommendations",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

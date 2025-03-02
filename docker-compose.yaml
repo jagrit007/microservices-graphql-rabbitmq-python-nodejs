@@ -1,0 +1,192 @@
+version: '3.9'
+
+services:
+  notifications_service:
+    build:
+      context: ./notifications_service
+      dockerfile: Dockerfile
+    container_name: notifications_service
+    ports:
+      - "8002:8002"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      JWT_SECRET: b1218b936ff9bba74233a42c6e633ed432cf14ded1d43daf2c0f81280f5cda479696aa7449a77b0a4cf05253fea8e6d8ef886577ad7dfa05976f8f798a2f557a
+      ALGORITHM: "HS256"
+      USER_SERVICE_URL: "http://user_service:8000"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_QUEUE: recommendation_queue
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+      REDIS_HOST: redis
+    depends_on:
+      - mongodb
+      - user_service
+      - rabbitmq
+    restart: always
+
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: fastapi_user
+      POSTGRES_PASSWORD: fastapi_pass
+      POSTGRES_DB: users_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # Named volume for Postgres data
+    restart: always
+
+  user_service:
+      build:
+        context: ./user_service
+        dockerfile: Dockerfile
+      container_name: user_service
+      ports:
+        - "8050:8000"
+      volumes:
+        - ./user_service/data:/app/data  # Persist SQLite database
+      environment:
+        DATABASE_URL: postgresql://fastapi_user:fastapi_pass@db/users_db
+        SECRET_KEY: b1218b936ff9bba74233a42c6e633ed432cf14ded1d43daf2c0f81280f5cda479696aa7449a77b0a4cf05253fea8e6d8ef886577ad7dfa05976f8f798a2f557a
+        ALGORITHM: HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES: 120
+      depends_on:
+        - db
+      restart: always
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    restart: always
+
+  recommendation_service:
+    build:
+      context: ./recommendation_service
+      dockerfile: Dockerfile
+    container_name: recommendation_service
+    ports:
+      - "8003:8003"
+    environment:
+      - MONGO_URI=mongodb://mongo_recommendation:27017/recommendations
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_QUEUE=recommendation_queue
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    depends_on:
+      - mongo_recommendation
+      - rabbitmq
+
+  mongo_recommendation:
+      image: mongo:6.0
+      container_name: mongo_recommendation
+      ports:
+        - "27019:27017"
+      volumes:
+        - mongo_recommendation_data:/data/db
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # RabbitMQ message broker port
+      - "15672:15672"  # Management UI (http://localhost:15672)
+      - "15692:15692"
+    environment:
+      RABBITMQ_ERLANG_COOKIE: secret
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  notifications_worker:
+    build: ./notifications_service
+    container_name: notifications_worker
+    depends_on:
+      - redis
+      - notifications_service
+    environment:
+      - REDIS_HOST=redis
+      - MONGO_URI=mongodb://mongodb:27017
+    volumes:
+      - ./notifications_service:/app
+    command: [ "node", "src/worker.js" ]
+
+  notifications_dlq_worker:
+    build: ./notifications_service
+    container_name: notifications_dlq_worker
+    depends_on:
+      - redis
+      - notifications_service
+      - notifications_worker
+    environment:
+      - REDIS_HOST=redis
+      - MONGO_URI=mongodb://mongodb:27017
+    volumes:
+      - ./notifications_service:/app
+    command: [ "node", "src/dlqWorker.js" ]
+
+  graphql_gateway:
+    build:
+      context: ./graphql_gateway
+      dockerfile: Dockerfile
+    container_name: graphql_gateway
+    ports:
+      - "4000:4000"
+    depends_on:
+      - user_service
+      - notifications_service
+      - recommendation_service
+      - redis
+    env_file:
+      - ./graphql_gateway/.env
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - redis
+      - rabbitmq
+
+  grafana:
+      image: grafana/grafana:latest
+      container_name: grafana
+      ports:
+        - "3000:3000"
+      volumes:
+        #- grafana-data:/var/lib/grafana
+        - ./monitoring/grafana:/var/lib/grafana
+
+      environment:
+        - GF_SECURITY_ADMIN_PASSWORD=admin
+      depends_on:
+        - prometheus
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: redis_exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+
+volumes:
+  mongodata:
+  pgdata:
+  mongo_recommendation_data:
+  grafana-data:

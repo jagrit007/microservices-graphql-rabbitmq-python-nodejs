@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: fastapi_user
+      POSTGRES_PASSWORD: fastapi_pass
+      POSTGRES_DB: users_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # Named volume for Postgres data
+    restart: always
+
+  user_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - "8050:8000"
+    volumes:
+      - ./data:/app/data  # Persist SQLite database
+    environment:
+      DATABASE_URL: postgresql://fastapi_user:fastapi_pass@db/users_db
+      SECRET_KEY: b1218b936ff9bba74233a42c6e633ed432cf14ded1d43daf2c0f81280f5cda479696aa7449a77b0a4cf05253fea8e6d8ef886577ad7dfa05976f8f798a2f557a
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 120
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  pgdata:

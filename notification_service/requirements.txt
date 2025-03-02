@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+motor                     # Async MongoDB driver
+pydantic
+python-jose               # For JWT handling
+httpx
+PyJWT
+pika
+celery[redis]
